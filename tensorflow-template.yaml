@@ -1,0 +1,192 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: tensorflow
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: tensorflow
+    name: tensorflow
+  spec:
+    ports:
+    - name: 6006-tcp
+      port: 6006
+      protocol: TCP
+      targetPort: 6006
+    - name: 8888-tcp
+      port: 8888
+      protocol: TCP
+      targetPort: 8888
+    selector:
+      app: tensorflow
+      deploymentconfig: tensorflow
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    generation: 5
+    labels:
+      app: tensorflow
+    name: tensorflow
+  spec:
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      app: tensorflow
+      deploymentconfig: tensorflow
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftNewApp
+        creationTimestamp: null
+        labels:
+          app: tensorflow
+          deploymentconfig: tensorflow
+      spec:
+        containers:
+        - image: tensorflow/tensorflow:latest-gpu
+          imagePullPolicy: IfNotPresent
+          name: tensorflow
+          ports:
+          - containerPort: 6006
+            protocol: TCP
+          - containerPort: 8888
+            protocol: TCP
+          resources: {}
+          securityContext:
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - effect: NoSchedule
+          key: nvidia.com/gpu
+          operator: Equal
+          value: value
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - tensorflow
+        from:
+          kind: ImageStreamTag
+          name: tensorflow:latest-gpu
+          namespace: nvidia-device-plugin
+        lastTriggeredImage: tensorflow/tensorflow@sha256:847690afb29977920dbdbcf64a8669a2aaa0a202844fe80ea5cb524ede9f0a0b
+      type: ImageChange
+  status:
+    availableReplicas: 0
+    latestVersion: 0
+    observedGeneration: 0
+    replicas: 0
+    unavailableReplicas: 0
+    updatedReplicas: 0
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+      openshift.io/image.dockerRepositoryCheck: 2018-12-01T17:53:02Z
+    creationTimestamp: null
+    generation: 2
+    labels:
+      app: tensorflow
+    name: tensorflow
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+    - annotations:
+        openshift.io/imported-from: tensorflow/tensorflow:latest-gpu
+      from:
+        kind: DockerImage
+        name: tensorflow/tensorflow:latest-gpu
+      generation: 2
+      importPolicy: {}
+      name: latest-gpu
+      referencePolicy:
+        type: Source
+  status:
+    dockerImageRepository: ""
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/host.generated: "true"
+    creationTimestamp: null
+    labels:
+      app: tensorflow
+    name: tensorflow
+  spec:
+    host: tensorflow-nvidia-device-plugin.apps.716b.openshiftworkshop.com
+    port:
+      targetPort: 8888
+    to:
+      kind: Service
+      name: tensorflow
+      weight: 100
+    wildcardPolicy: None
+  status:
+    ingress:
+    - conditions:
+      - lastTransitionTime: 2018-12-01T18:30:26Z
+        status: "True"
+        type: Admitted
+      host: tensorflow-nvidia-device-plugin.apps.716b.openshiftworkshop.com
+      routerName: router
+      wildcardPolicy: None
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/host.generated: "true"
+    creationTimestamp: null
+    labels:
+      app: tensorflow
+    name: tensorboard
+  spec:
+    host: tensorboard-nvidia-device-plugin.apps.716b.openshiftworkshop.com
+    port:
+      targetPort: 6006
+    to:
+      kind: Service
+      name: tensorflow
+      weight: 100
+    wildcardPolicy: None
+  status:
+    ingress:
+    - conditions:
+      - lastTransitionTime: 2018-12-01T18:31:15Z
+        status: "True"
+        type: Admitted
+      host: tensorboard-nvidia-device-plugin.apps.716b.openshiftworkshop.com
+      routerName: router
+      wildcardPolicy: None
