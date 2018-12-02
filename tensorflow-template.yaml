@@ -9,6 +9,7 @@ objects:
   metadata:
     annotations:
       openshift.io/generated-by: OpenShiftNewApp
+      iconClass: icon-beaker
     creationTimestamp: null
     labels:
       app: tensorflow
